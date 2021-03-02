@@ -1,0 +1,27 @@
+@charset "ISO-8859-1";
+
+.invisible {
+	display:none;
+}
+#MainBody {
+	margin-top: 100px;
+	width: 800px;
+}
+
+#ActionListLabel{
+	margin-top: 100px;
+	margin-bottom: 30px;
+}
+#getData {
+	margin-top: 100px;
+}
+
+.input-group-text {
+	width:150px;
+}
+#ActionList span {
+	height: 30px;
+	text-align: center;
+	width: 50px;
+	display: inline-block;
+}
