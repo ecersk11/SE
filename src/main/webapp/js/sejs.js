@@ -1,14 +1,29 @@
+var actionOptions = ["Suite","Suite > Listeners","Suite > Parameter","Suite > Test"];
+var suiteAttr = ["name","invocationCount"];
+var suiteParameterAttr = ["configFilePath","onTheFlyInputFilePath"];
+
 var actionCount = 0 ;
 var actionType = "Add";
 var actionLevel = "";
 var actionTableContain = "";
 var actionList = "";
 
+onHomePageLoad();
+$('#actionType').html("Add");
+
+function onHomePageLoad(){
+	var actionOptionsList = "";
+	var editOption= "";
+	actionOptions.forEach(updateActionOptions);
+	function updateActionOptions(actionOptions){
+		editOption += "<option value='"+actionOptions+"'>";
+	}
+	$("#browsers").html(editOption)
+}
+
 function submitEnable(){
 	$("#footerArea").removeClass('invisible');
 }
-
-$('#actionType').html("Add");
 
 $("#browser").bind('input', function () {
     var x = document.getElementById("browsers");
@@ -29,11 +44,62 @@ $('.dropdown-menu').on( 'click', 'a', function() {
   $('#actionType').html(actionType);
 });
 
+var inputGroupHtml = "";
+var model = "";
+
 function functionModel() {
-	if(actionLevel === "Suite"){
+var getModel = "";
+var attributeList = "";
+if(actionLevel === "Suite"){
 		console.log("suite Attribute action called");
-		functionSuiteModel(actionType, actionLevel);
+		attributeList = suiteAttr;
+	} else if (actionLevel === "Suite > Parameter") {
+		console.log("suite > Parameter - Attribute action called");
+		attributeList = suiteParameterAttr;
 	}
+	inputGroupHtml = "";
+	model = "";
+	attributeList.forEach(addInputGroup);
+	console.log(inputGroupHtml);		
+	addModel();
+	console.log("model >> " +model);
+	$('#getInput').html(model);
+	$('#addModal').modal('show');		
+	$('#browser').val("");
+	$('#actionType').html("Add");
+			
+}
+function addInputGroup(value){
+inputGroupHtml = inputGroupHtml+ '<div class="input-group">'+
+					  '<div class="input-group-prepend">'+
+					    '<span class="input-group-text" >'+value+'</span>'+
+					  '</div>'+
+					  '<input id="'+actionType+actionLevel+value+'" name="'+actionType+actionLevel+value+'" type="text" class="form-control">'+
+					'</div>';
+		
+					
+}
+
+
+function addModel(){			
+model = '<div class="modal fade" id="addModal" tabindex="-1" role="dialog" aria-labelledby="addModalLabel" aria-hidden="true">'+
+			  '<div class="modal-dialog" role="document">'+
+			    '<div class="modal-content">'+
+			      '<div class="modal-header">'+
+			        '<h5 class="modal-title" id="addModalLabel">Add '+actionLevel+' Attribute</h5>'+
+			        '<button id="addcloseModel" type="button" class="close" data-dismiss="modal" aria-label="Close">'+
+			          '<span aria-hidden="true">&times;</span>'+
+			        '</button>'+
+			      '</div>'+
+			      '<div class="modal-body">'+
+			     	 inputGroupHtml+
+			      '</div>'+
+			      '<div class="modal-footer">'+
+			        '<button id="AddSaveAtSuite" type="button" class="btn btn-primary">Save changes</button>'+
+			      '</div>'+
+			    '</div>'+
+			  '</div>'+
+			'</div>';
 }
 
 function functionSuiteModel(actionType, actionLevel) {

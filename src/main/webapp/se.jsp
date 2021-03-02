@@ -36,11 +36,7 @@
 			  <div class="input-group-append">
 			     <div id="ActionSelector" >
 				  <input placeholder="Select Suite Edit Action" list="browsers" name="browser" id="browser" class="form-control">
-				  <datalist id="browsers">
-				    <option value="Suite">
-				    <option value="Suite > Listeners ">
-				    <option value="Suite > Parameter ">
-				  </datalist>
+				  <datalist id="browsers"></datalist>
 				  </div>
 			  </div>
 			</div>
@@ -48,7 +44,7 @@
 			<!-- Drop Down End -->
 
 
-			 <form action="Input" method="post" enctype="multipart/form-data">
+		<form action="Input" method="post" enctype="multipart/form-data">
 			<!-- Modal -->
 			<div class="modal fade" id="addexampleModal" tabindex="-1" role="dialog" aria-labelledby="addexampleModalLabel" aria-hidden="true">
 			  <div class="modal-dialog" role="document">
@@ -168,8 +164,6 @@
 			    </div>
 			  </div>
 			</div>
-			
-		
 		</form>
 			
 			<!-- Action Table Start -->
