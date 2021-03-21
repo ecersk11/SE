@@ -1,27 +1,123 @@
 @charset "ISO-8859-1";
 
+.navbar-custom { 
+	background-color: #ABB2B9;
+}
+.navmargin{
+	margin-left: 100px;
+	margin-right: 100px;
+}
 .invisible {
 	display:none;
 }
-#MainBody {
-	margin-top: 100px;
-	width: 800px;
+main {
+	margin-top: 20px;
 }
-
-#ActionListLabel{
-	margin-top: 100px;
-	margin-bottom: 30px;
-}
-#getData {
-	margin-top: 100px;
-}
-
 .input-group-text {
 	width:150px;
 }
-#ActionList span {
-	height: 30px;
-	text-align: center;
-	width: 50px;
-	display: inline-block;
+.float{
+	position:fixed;
+	bottom:100px;
+	right:115px;
+	text-align:center;
+	border-radius:5px;	
+	box-shadow: 2px 2px 3px #999;
+}
+#actioncount{
+	background-color: #2C3E50;
+	color: #D35400;
+}
+#filestatus{
+	background-color: #566573;
+	color: #D35400;
+}
+#contact{
+	background-color: #2C3E50;
+	color: white;
+}
+#document{
+	background-color: #566573;
+	color: white;
+}
+#addaction, #addFile{
+	border-width:1px;  
+    border-style:dashed;
+}
+.tdAdded{
+	border-width:1px;  
+    border-style:dashed;
+}
+#mainBody, #SuiteList, #allSuite, #passSuite, #failSuite, #noEditSuite  {
+	width: 700px;
+}
+#SuiteCount, #incorrectlyEdited{
+	background-color: #2C3E50;
+	color: #58D68D;
+}
+#correctlyEdited, #noEdit {
+	background-color: #566573;
+	color: #58D68D;
+}
+.failedReason {
+	color: #D35400;
+	font-size: 40%
+}
+#pageloader {
+	margin-top: 140px;
+}
+.lds-ellipsis {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 80px;
+}
+.lds-ellipsis div {
+  position: absolute;
+  top: 33px;
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: black;
+  animation-timing-function: cubic-bezier(0, 1, 1, 0);
+}
+.lds-ellipsis div:nth-child(1) {
+  left: 8px;
+  animation: lds-ellipsis1 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(2) {
+  left: 8px;
+  animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(3) {
+  left: 32px;
+  animation: lds-ellipsis2 0.6s infinite;
+}
+.lds-ellipsis div:nth-child(4) {
+  left: 56px;
+  animation: lds-ellipsis3 0.6s infinite;
+}
+@keyframes lds-ellipsis1 {
+  0% {
+    transform: scale(0);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes lds-ellipsis3 {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(0);
+  }
+}
+@keyframes lds-ellipsis2 {
+  0% {
+    transform: translate(0, 0);
+  }
+  100% {
+    transform: translate(24px, 0);
+  }
 }
