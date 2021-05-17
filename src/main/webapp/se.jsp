@@ -10,14 +10,14 @@
 		<link rel="stylesheet" type="text/css" href="css/se.css">
 		<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" integrity="sha384-JcKb8q3iqJ61gNV9KGb8thSsNjpSL0n8PARn9HuZOnIxN0hoP+VmmDGMN5t9UJ0Z" crossorigin="anonymous">
 	</head>
-	<body>
+	<body  onload="init()">
 
 		<!-- Header Start -->
 		<header>
 			<div>
 				<nav class="navbar navbar-light navbar-custom justify-content-between">
 					<div class="navmargin">
-						<a class="navbar-brand" data-toggle="tooltip" data-placement="bottom" title="Unique code : ${uniqueId}" >
+						<a href="/" class="navbar-brand" data-toggle="tooltip" data-placement="bottom" title="Unique code : ${uniqueId}" >
 							<i class="far fa-edit mx-2"></i>Suite Editor
 						</a>
 					</div>
@@ -37,7 +37,6 @@
 				<form action="Input" id="mainForm" method="post" enctype="multipart/form-data">
 					
 					<!-- Page contains -->
-					<div>
 						<div id="alertMessageBox" class="alert alert-light mb-10" role="alert">
 							<br>							
 						</div>
@@ -171,6 +170,31 @@
 								</div>
 								</div>
 								</div>	
+								
+							<div id="Test_Class" class="invisible mt-3">
+							<ul class="nav nav-tabs" role="tablist">
+							  <li class="nav-item">
+							    <a class="nav-link active"  data-toggle="tab" href="#Test_Class_Update" role="tab" aria-controls="Test_Class_Update" aria-selected="false">Update</a>
+							  </li>
+							 </ul>
+							<div class="tab-content mt-2" >
+							  <div class="tab-pane fade show active" id="Test_Class_Update" role="tabpanel">
+					        <div class="input-group">
+							  <div class="input-group-prepend">
+							    <span class="input-group-text" >Old Class Name</span>
+							  </div>
+							  <input id="updateTestClassClassNameOld" name="updateTestClassClassNameOld" placeholder="Old value" type="text" class="form-control">
+							</div>
+					        <div class="input-group">
+							  <div class="input-group-prepend">
+							    <span class="input-group-text" >New Class Name</span>
+							  </div>
+							  <input id="updateTestClassClassNameNew" name="updateTestClassClassNameNew" placeholder="New value" type="text" class="form-control">
+							</div>
+							</div>
+							</div>
+							</div>
+								
 							<div id="Test_Class_Method_Parameter" class="invisible mt-3">
 							<ul class="nav nav-tabs" role="tablist">
 							  <li class="nav-item">
@@ -215,6 +239,7 @@
 					    </div>
 					  </div>
 					</div>
+					 	<input id="inputJson" class="invisible" name="inputJson" type="text">
 						<div class="text-center">
 							<button id="reviewbtn" type="submit" class="btn btn-dark">Process</button>
 						</div>

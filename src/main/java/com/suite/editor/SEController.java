@@ -8,18 +8,14 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.StringReader;
-import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.logging.FileHandler;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -37,7 +33,9 @@ import org.dom4j.dom.DOMAttribute;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
+import org.springframework.boot.json.GsonJsonParser;
 import org.springframework.stereotype.Controller;
+import org.springframework.util.StringUtils;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.multipart.MultipartFile;
@@ -45,6 +43,9 @@ import org.springframework.web.servlet.ModelAndView;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import com.google.gson.Gson;
+import com.suite.pojo.UserInputData;
 
 import net.lingala.zip4j.ZipFile;
 
@@ -127,14 +128,28 @@ public class SEController {
 			logger.info("moved file from client to server at "+ unzippedFolderPath.toString());
 
 			logger.info("========= Input list start =========");
-			Map<String, String> updateTestClassMethodParamMap = new HashMap<>();
+			//			Map<String, String> updateTestClassMethodParamMap = new HashMap<>();
+			//
+			//			Enumeration<String> enumeration = req.getParameterNames();
+			//			while(enumeration.hasMoreElements()){ 
+			//				String key = enumeration.nextElement(); 
+			//				updateTestClassMethodParamMap.put(key, req.getParameter(key));
+			//				logger.info(" >> "+ key +" = "+ req.getParameter(key)); 
+			//			}
 
-			Enumeration<String> enumeration = req.getParameterNames();
-			while(enumeration.hasMoreElements()){ 
-				String key = enumeration.nextElement(); 
-				updateTestClassMethodParamMap.put(key, req.getParameter(key));
-				logger.info(" >> "+ key +" = "+ req.getParameter(key)); 
+			String jsonString = req.getParameter("inputJson"); 
+			logger.info("Json input received : "+ jsonString);
+			ArrayList<UserInputData> uidl = new ArrayList<UserInputData>();
+			GsonJsonParser g = new GsonJsonParser();
+			List<Object> xl = g.parseList(jsonString);
+			for(Object x : xl) {
+				if(x.toString().equals("DELETED")) continue;
+				Gson gs = new Gson();
+				UserInputData uid = gs.fromJson(x.toString(), UserInputData.class);
+				uidl.add(uid);
+				logger.info(uid.toString());
 			}
+
 			logger.info("========= Input list end =========");
 
 			ArrayList<String> allSuite = new ArrayList<>();
@@ -148,7 +163,7 @@ public class SEController {
 						@SuppressWarnings("resource")
 						String result = new BufferedReader(new InputStreamReader(new FileInputStream(filePath.toFile()))).lines().collect(Collectors.joining("\n"));
 						if (result != null && result.contains("testng-extended-dtd")) {
-							EditStatus editstatus = editSuite(filePath,updateTestClassMethodParamMap,req);
+							EditStatus editstatus = editSuite(filePath,uidl,req);
 
 							String updatedfilePath = filePath.toFile().getAbsolutePath().toString().replace(workingPath.toFile().getAbsolutePath().toString(),"");
 							updatedfilePath = addSpaceAtFixedLength(updatedfilePath, 70);
@@ -168,6 +183,8 @@ public class SEController {
 							default:
 								break;
 							}
+						}else {
+							logger.warning("File is blank or doesn't have custom testng-extended-dtd tag >> "+ filePath.getFileName().toString());	
 						}
 					}catch(Exception e) {
 						e.printStackTrace();
@@ -255,7 +272,8 @@ public class SEController {
 		}
 	}
 
-	public EditStatus editSuite(Path p, Map<String,String> updateTestClassMethodParamMap, HttpServletRequest req) {
+	@SuppressWarnings("unchecked")
+	public EditStatus editSuite(Path p, ArrayList<UserInputData> uidl, HttpServletRequest req) {
 		EditStatus editStatus = EditStatus.noEdit;
 		HttpSession session = req.getSession();
 		FileHandler fh = null; 
@@ -285,108 +303,162 @@ public class SEController {
 				}
 			});
 			Document document = reader.read(inputFile);
-			
-			if(!EditStatus.Fail.toString().equals(editStatus.toString())) {
 
-				try {
+			for(UserInputData uid: uidl) {
+				if(!EditStatus.Fail.toString().equals(editStatus.toString())) {
+					if(uid.getAction().equalsIgnoreCase("Test_Class_Method_Parameter")) {
+						if(uid.getActiveTab().equalsIgnoreCase("Update")) {
+							try {
+								String className = uid.getParamClassName();
+								String methodName = uid.getParamMethodName();
+								String paramParameterName = uid.getParameterName();
+								String paramValueOld = uid.getParamValueOld();
+								String paramValueNew = uid.getParamValueNew();
+								List<Node> nodes = document.selectNodes("/suite/test/classes/class[@name='"+className+"']/methods/include" );
 
-					String addNameAtSuite = updateTestClassMethodParamMap.get("addNameAtSuite");
-					String addinvocationCountAtSuite = updateTestClassMethodParamMap.get("addinvocationCountAtSuite");
-
-					String updateNameAtSuiteOld = updateTestClassMethodParamMap.get("updateNameAtSuiteOld");
-					String updateNameAtSuiteNew = updateTestClassMethodParamMap.get("updateNameAtSuiteNew");
-					String updateinvocationCountAtSuiteOld = updateTestClassMethodParamMap.get("updateinvocationCountAtSuiteOld");
-					String UpdateinvocationCountAtSuiteNew = updateTestClassMethodParamMap.get("UpdateinvocationCountAtSuiteNew");
-
-					String deleteNameAtSuite = updateTestClassMethodParamMap.get("deleteNameAtSuite");
-					String deleteinvocationCountAtSuite = updateTestClassMethodParamMap.get("deleteinvocationCountAtSuite");
-
-					List<Node> nodes = document.selectNodes("/suite");
-
-					for (Node node : nodes) {
-						Element element = (Element)node;
-
-						if(!addNameAtSuite.isEmpty() && element.valueOf("@name").isEmpty()) {
-							element.addAttribute("name", addNameAtSuite);
-							editStatus = EditStatus.Pass;
-						}
-						if(!addinvocationCountAtSuite.isEmpty() && element.valueOf("@invocationCount").isEmpty()) {
-							element.addAttribute("invocationCount", addinvocationCountAtSuite);
-							editStatus = EditStatus.Pass;
-						}
-
-						if(!updateNameAtSuiteOld.isEmpty() && !updateNameAtSuiteNew.isEmpty() && element.valueOf("@name").trim().equals(updateNameAtSuiteOld.trim())) {
-							element.addAttribute("name", updateNameAtSuiteNew);
-							editStatus = EditStatus.Pass;
-						}
-						if(!updateinvocationCountAtSuiteOld.isEmpty() && !UpdateinvocationCountAtSuiteNew.isEmpty() && element.valueOf("@invocationCount").trim().equals(updateinvocationCountAtSuiteOld.trim())) {
-							element.addAttribute("invocationCount", UpdateinvocationCountAtSuiteNew);
-							editStatus = EditStatus.Pass;
-						}
-
-						if(!deleteNameAtSuite.isEmpty() && element.valueOf("@name").trim().equals(deleteNameAtSuite.trim())) {
-							QName name = new QName("name");
-							DOMAttribute a = new DOMAttribute(name); 
-							element.remove(a);
-							editStatus = EditStatus.Pass;
-						}
-						if(!deleteinvocationCountAtSuite.isEmpty() && element.valueOf("@invocationCount").trim().equals(deleteinvocationCountAtSuite.trim()) ) {
-							QName name = new QName("invocationCount");
-							DOMAttribute a = new DOMAttribute(name); 
-							element.remove(a);
-							editStatus = EditStatus.Pass;
-						}
-					}
-				}catch(Exception e) {
-					editStatus = EditStatus.Fail;
-					throw new Exception("Failed to process suite actions " +e.getMessage());
-				}
-				sb.append(" << Suite Edit Actions : "+editStatus.toString()+" >> ");
-			}
-			if(!EditStatus.Fail.toString().equals(editStatus.toString())) {
-				
-				try {
-					// only update action is supported as of now.
-					String className = updateTestClassMethodParamMap.get("updateTestClassMethodParamClassName");
-					String methodName = updateTestClassMethodParamMap.get("updateTestClassMethodParamMethodName");
-					String paramParameterName = updateTestClassMethodParamMap.get("updateTestClassMethodParamParameterName");
-					String paramValueOld = updateTestClassMethodParamMap.get("updateTestClassMethodParamValueOld");
-					String paramValueNew = updateTestClassMethodParamMap.get("updateTestClassMethodParamValueNew");
-
-					if(!(className == null || methodName == null || paramParameterName == null || paramValueOld == null || paramValueNew == null)) {
-						Element classElement = document.getRootElement();
-						List<Node> nodes = document.selectNodes("/suite/test/classes/class[@name='"+className+"']/methods/include" );
-						for (Node node : nodes) {
-							Element element = (Element)node;
-							if(element.valueOf("@name").equalsIgnoreCase(methodName)){
-								Iterator<Element> iterator = element.elementIterator("parameter");
-								while(iterator.hasNext()) {
-									Element marksElement = (Element)iterator.next();
-									if(marksElement.valueOf("@name").equalsIgnoreCase(paramParameterName)){
-										String value[] = marksElement.valueOf("@value").split("#");
-										int i=0;
-										String updatedValue = "";
-										for(; i<value.length; i++) {
-											if(value[i].trim().equalsIgnoreCase(paramValueOld.trim())) {
-												editStatus = EditStatus.Pass;
-												updatedValue = updatedValue +(i==0? "" : "#")+ paramValueNew; 
-											}else {
-												updatedValue = updatedValue +(i==0? "" : "#")+ value[i]; 
+								if(StringUtils.hasText(className) && StringUtils.hasText(methodName) && StringUtils.hasText(paramParameterName) && StringUtils.hasText(paramValueOld) && StringUtils.hasText(paramValueNew)) {
+									if(!(className.equalsIgnoreCase("NOT_SET") || methodName.equalsIgnoreCase("NOT_SET") || paramParameterName.equalsIgnoreCase("NOT_SET") || paramValueOld.equalsIgnoreCase("NOT_SET") || paramValueNew.equalsIgnoreCase("NOT_SET"))) {
+										for (Node node : nodes) {
+											Element element = (Element)node;
+											if(element.valueOf("@name").equalsIgnoreCase(methodName)){
+												@SuppressWarnings("unchecked")
+												Iterator<Element> iterator = element.elementIterator("parameter");
+												while(iterator.hasNext()) {
+													Element marksElement = (Element)iterator.next();
+													if(marksElement.valueOf("@name").equalsIgnoreCase(paramParameterName)){
+														String value[] = marksElement.valueOf("@value").split("#");
+														int i=0;
+														String updatedValue = "";
+														for(; i<value.length; i++) {
+															if(value[i].trim().equalsIgnoreCase(paramValueOld.trim())) {
+																editStatus = EditStatus.Pass;
+																updatedValue = updatedValue +(i==0? "" : "#")+ paramValueNew; 
+															}else {
+																updatedValue = updatedValue +(i==0? "" : "#")+ value[i]; 
+															}
+														}
+														if(editStatus.toString().equals(EditStatus.Pass.toString())) {
+															marksElement.addAttribute("value", updatedValue);
+														}
+													}
+												}
 											}
 										}
-										if(editStatus.toString().equals(EditStatus.Pass.toString())) {
-											marksElement.addAttribute("value", updatedValue);
-										}
+									}else {
+										logger.info("Skipping the update due to incorrect data input");
 									}
 								}
+							}catch(Exception e) {
+								editStatus = EditStatus.Fail;
+								throw new Exception("Failed to process test parameter actions " +e.getMessage());
 							}
+							sb.append(" << Test Parameter Edit Actions : "+editStatus.toString()+" >> ");
+						}
+					}else if(uid.getAction().equalsIgnoreCase("Test_Class")) {
+						List<Node> nodes = document.selectNodes("/suite/test/classes/class");
+						if(uid.getActiveTab().equalsIgnoreCase("Update")) {
+							try {
+								String classNameOld =  uid.getClassNameOld();
+								String classNameNew =  uid.getClassNameNew();
+
+								if(StringUtils.hasText(classNameOld) && StringUtils.hasText(classNameNew)) {
+									if(!(classNameOld.equalsIgnoreCase("NOT_SET") || classNameNew.equalsIgnoreCase("NOT_SET"))){
+										for (Node node : nodes) {
+											Element element = (Element)node;
+											if(element.valueOf("@name").trim().equalsIgnoreCase(classNameOld.trim())) {
+												element.addAttribute("name", classNameNew.trim());
+												editStatus = EditStatus.Pass;
+											}
+										}
+									}else {
+										logger.info("Skipping the update due to incorrect data input");
+									}
+								}
+							}catch(Exception e) {
+								editStatus = EditStatus.Fail;
+								throw new Exception("Failed to process class name actions " +e.getMessage());
+							}
+							sb.append(" << Test Parameter Edit Actions : "+editStatus.toString()+" >> ");
+						}
+					}else if(uid.getAction().equalsIgnoreCase("Suite")) {
+						List<Node> nodes = document.selectNodes("/suite");
+						if(uid.getActiveTab().equalsIgnoreCase("Add")) {
+
+							String addNameAtSuite = uid.getNameAtSuite();
+							String addinvocationCountAtSuite = uid.getInvocationCountAtSuite();
+							try {
+								for (Node node : nodes) {
+									Element element = (Element)node;
+
+									if(!addNameAtSuite.isEmpty() && !addNameAtSuite.equalsIgnoreCase("NOT_SET") && element.valueOf("@name").isEmpty()) {
+										element.addAttribute("name", addNameAtSuite);
+										editStatus = EditStatus.Pass;
+									}
+									if(!addinvocationCountAtSuite.isEmpty() && !addinvocationCountAtSuite.equalsIgnoreCase("NOT_SET") && element.valueOf("@invocationCount").isEmpty()) {
+										element.addAttribute("invocationCount", addinvocationCountAtSuite);
+										editStatus = EditStatus.Pass;
+									}
+								}
+							}catch(Exception e) {
+								editStatus = EditStatus.Fail;
+								throw new Exception("Failed to process suite actions " +e.getMessage());
+							}
+							sb.append(" << Suite Edit Actions : "+editStatus.toString()+" >> ");
+						}else if(uid.getActiveTab().equalsIgnoreCase("Update")) {
+
+							String updateNameAtSuiteOld = uid.getNameAtSuiteOld();
+							String updateNameAtSuiteNew = uid.getNameAtSuiteNew();
+							String updateinvocationCountAtSuiteOld = uid.getInvocationCountOld();
+							String UpdateinvocationCountAtSuiteNew = uid.getInvocationCountNew();
+
+							try {
+								for (Node node : nodes) {
+									Element element = (Element)node;
+
+									if(!updateNameAtSuiteOld.isEmpty() && !updateNameAtSuiteNew.isEmpty() && !updateNameAtSuiteOld.equalsIgnoreCase("NOT_SET") && !updateNameAtSuiteNew.equalsIgnoreCase("NOT_SET") && element.valueOf("@name").trim().equals(updateNameAtSuiteOld.trim())) {
+										element.addAttribute("name", updateNameAtSuiteNew);
+										editStatus = EditStatus.Pass;
+									}
+									if(!updateinvocationCountAtSuiteOld.isEmpty() && !UpdateinvocationCountAtSuiteNew.isEmpty() && !updateinvocationCountAtSuiteOld.equalsIgnoreCase("NOT_SET") && !UpdateinvocationCountAtSuiteNew.equalsIgnoreCase("NOT_SET") && element.valueOf("@invocationCount").trim().equals(updateinvocationCountAtSuiteOld.trim())) {
+										element.addAttribute("invocationCount", UpdateinvocationCountAtSuiteNew);
+										editStatus = EditStatus.Pass;
+									}
+								}
+							}catch(Exception e) {
+								editStatus = EditStatus.Fail;
+								throw new Exception("Failed to process suite actions " +e.getMessage());
+							}
+							sb.append(" << Suite Edit Actions : "+editStatus.toString()+" >> ");
+
+						}else if(uid.getActiveTab().equalsIgnoreCase("Delete")) {
+							String deleteNameAtSuite = uid.getNameAtSuite(); 
+							String deleteinvocationCountAtSuite = uid.getInvocationCountAtSuite();
+
+							try {
+								for (Node node : nodes) {
+									Element element = (Element)node;
+
+									if(!deleteNameAtSuite.isEmpty() && !deleteNameAtSuite.equalsIgnoreCase("NOT_SET") && element.valueOf("@name").trim().equals(deleteNameAtSuite.trim())) {
+										QName name = new QName("name");
+										DOMAttribute a = new DOMAttribute(name); 
+										element.remove(a);
+										editStatus = EditStatus.Pass;
+									}
+									if(!deleteinvocationCountAtSuite.isEmpty() && !deleteinvocationCountAtSuite.equalsIgnoreCase("NOT_SET") && element.valueOf("@invocationCount").trim().equals(deleteinvocationCountAtSuite.trim()) ) {
+										QName name = new QName("invocationCount");
+										DOMAttribute a = new DOMAttribute(name); 
+										element.remove(a);
+										editStatus = EditStatus.Pass;
+									}
+								}
+							}catch(Exception e) {
+								editStatus = EditStatus.Fail;
+								throw new Exception("Failed to process suite actions " +e.getMessage());
+							}
+							sb.append(" << Suite Edit Actions : "+editStatus.toString()+" >> ");
 						}
 					}
-				}catch(Exception e) {
-					editStatus = EditStatus.Fail;
-					throw new Exception("Failed to process test parameter actions " +e.getMessage());
 				}
-				sb.append(" << Test Parameter Edit Actions : "+editStatus.toString()+" >> ");
 			}
 
 			if(editStatus.toString().equals(EditStatus.Pass.toString())) {
@@ -448,7 +520,6 @@ public class SEController {
 		public void setFailureReason(String failureReason) {
 			this.failureReason = failureReason;
 		}
-
 	}
 }
 

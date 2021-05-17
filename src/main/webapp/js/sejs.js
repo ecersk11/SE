@@ -1,5 +1,14 @@
 var actionCount = 0 ;
 
+function init(){
+	actionCount = 0 ;
+	allActionLevel = "";
+	actionId = 0;
+	jsoninput = [];
+	jsonString = "";
+	console.log("value init");
+}
+
 // -----------------------
 // input schema
 // -----------------------
@@ -9,11 +18,15 @@ var suiteObj =
 	"actionLevel":[
 		{
 			"uiName":"Test > Class > Method > Parameter",
-			"name":"Test_Class_Method_Parameter"
+			"name":"Test_Class_Method_Parameter",
+		},
+		{
+			"uiName":"Test > Class",
+			"name":"Test_Class",
 		},
 		{
 			"uiName":"Suite",
-			"name":"Suite"
+			"name":"Suite",
 		}
 	]
 };
@@ -83,7 +96,9 @@ $('#document').on('click', function(){
 // -----------------------
 
 var allActionLevel = "";
-var idList = [];
+var actionId = 0;
+var jsoninput = [];
+var jsonString = "";
 
 $('#actioncount').on('click', function(){
 	initActionLevel();
@@ -141,68 +156,58 @@ $('#saveAction').on('click', function(){
 			activeTab = x[i].text;
 		}
 	}
-	
-	var id = selectedAction+'_'+activeTab;
+	var id = selectedAction+'_'+activeTab+'_'+actionId;
+	actionId++;
 	console.log("id : "+id);
-	var isMatch = false;
 	
-	for(var i=0; i<idList.length; i++){
-		if(id === idList[i]){
-			isMatch = true;
-			console.log('Id present')		
-		}	
-	}
 	$('#alertMessageBox').html('<br>');
 	$('#alertMessageBox').removeClass();
 	$('#alertMessageBox').addClass('alert alert-light');
 		
-	if(!isMatch){	
-		var count = idList.length;
-		idList[idList.length] = id;
-		actionCount++;
+	$('#actioncount').css('color','#58D68D');
+	$('#actioncount').find('span').html(actionCount);
 		
-		$('#actioncount').css('color','#58D68D');
-		$('#actioncount').find('span').html(actionCount);
+	var actionListHtml = $('#ActionList').find('tbody').html();
+	var userInterpretableActionMessage = createUserInterpretableActionMessage(id, selectedAction, activeTab);
+	actionListHtml =  actionListHtml + userInterpretableActionMessage;
+	$('#ActionList').find('tbody').html(actionListHtml);
+	actionCount++;
 		
-		var actionListHtml = $('#ActionList').find('tbody').html();
-		var serInterpretableActionMessage = createUserInterpretableActionMessage(id, selectedAction, activeTab);
-		actionListHtml = serInterpretableActionMessage + actionListHtml;
-		$('#ActionList').find('tbody').html(actionListHtml);
-		
-		$('#alertMessageBox').removeClass('alert-light');
-		$('#alertMessageBox').addClass('alert-success');
-		$('#alertMessageBox').html('Action Added !');
+	$('#alertMessageBox').removeClass('alert-light');
+	$('#alertMessageBox').addClass('alert-success');
+	$('#alertMessageBox').html('Action Added !');
 
-		$('#addaction').on('click', function(){
-			initActionLevel();
-		});	
-	}else{
-		$('#alertMessageBox').removeClass('alert-light');
-		$('#alertMessageBox').addClass('alert-danger');
-		$('#alertMessageBox').html('Action already present, duplicate action can not exists together !');
-	}
+	$('#addaction').on('click', function(){
+		initActionLevel();
+	});	
 	setTimeout(function(){
-			$('#alertMessageBox').html('<br>');
-			$('#alertMessageBox').removeClass();
-			$('#alertMessageBox').addClass('alert alert-light');
-		}, 5000);
+		$('#alertMessageBox').html('<br>');
+		$('#alertMessageBox').removeClass();
+		$('#alertMessageBox').addClass('alert alert-light');
+	}, 5000);
 });
 
 $(document).on('click', '.action-delete', function() {
 	console.log("deleted an action");
-	actionCount--;
-	var id = $(this).closest('tr').attr('id');
-	for(var i=0; i<idList.length; i++){
-		if(idList[i] === id){
-			delete idList[i];
-		}
-	}
+
 	$('#alertMessageBox').html('<br>');
 	$('#alertMessageBox').removeClass();
 	$('#alertMessageBox').addClass('alert alert-light');
 	
+	for(var i=0; i<jsoninput.length; i++){
+		console.log(jsoninput[i].id + " == " + $(this).closest('tr').attr('id'))
+		if(jsoninput[i].id == $(this).closest('tr').attr('id')){
+			console.log("done");
+			jsoninput[i] = "DELETED";	
+		}	
+	}
+	
 	$(this).closest('tr').remove();
+	actionCount--;
 	$('#actioncount').find('span').html(actionCount);
+	jsonString = JSON.stringify(jsoninput);
+	$('#inputJson').val(jsonString);
+	console.log(jsonString);
 	if(actionCount == 0){
 		$('#actioncount').css('color','#D35400');
 	}
@@ -218,29 +223,45 @@ $(document).on('click', '.action-delete', function() {
 		}, 5000);
 });
 
-function createKeyValueList(id){
-	var keyValue = "";
-	var keylist = $('#'+id).find('span');
-	var valuelist = $('#'+id).find('input');
-	
-	console.log('keylist '+keylist.length);
-	
-	for(var i=0; i<keylist.length; i++){
-		if(!($('#'+valuelist[i].id).val() === null || $('#'+valuelist[i].id).val() === "" )){
-			keyValue += keylist[i].textContent+'='+ $('#'+valuelist[i].id).val();
-			if(i != keylist.length-1){
-				keyValue += ' , ';
-			}
-		} 
-	}
-	return keyValue;
-}
-
 function createUserInterpretableActionMessage(id, selectedAction, activeTab){
 	var message = '';
 	if(selectedAction === 'Test_Class_Method_Parameter'){
 		if(activeTab === 'Update') {
-			message = 'Updating Method Parameter ' + $('#updateTestClassMethodParamParameterName').val() + ' from ' + $('#updateTestClassMethodParamValueOld').val() + ' to ' +  $('#updateTestClassMethodParamValueNew').val() + ' where class name = ' + $('#updateTestClassMethodParamClassName').val() + ' method name = ' + $('#updateTestClassMethodParamMethodName').val();
+			var paramName =  $('#updateTestClassMethodParamParameterName').val();
+			var paramValueOld = $('#updateTestClassMethodParamValueOld').val();
+			var paramValueNew = $('#updateTestClassMethodParamValueNew').val();
+			var className = $('#updateTestClassMethodParamClassName').val();
+			var methodName = $('#updateTestClassMethodParamMethodName').val();
+			if(paramName === ""){
+				paramName = "NOT_SET";
+			}
+			if(paramValueOld === ""){
+				paramValueOld = "NOT_SET";
+			}
+			if(paramValueNew === ""){
+				paramValueNew = "NOT_SET";
+			}
+			if(className === ""){
+				className = "NOT_SET";
+			}
+			if(methodName === ""){
+				methodName = "NOT_SET";
+			}
+			jsoninput[jsoninput.length] = {"id":id, "action":selectedAction, "activeTab":activeTab, "ParameterName": paramName , "ParamValueOld":paramValueOld, "ParamValueNew":paramValueNew, "ParamClassName":className, "ParamMethodName": methodName}; 
+			message = 'Updating Method Parameter ' + paramName + ' from ' + paramValueOld + ' to ' +  paramValueNew + ' where class name = ' + className + ' method name = ' + methodName;
+		}
+	} else if (selectedAction === 'Test_Class') {
+		if(activeTab === 'Update') {
+			var classNameOld = $('#updateTestClassClassNameOld').val();
+			var classNameNew = $('#updateTestClassClassNameNew').val();
+			if(classNameOld === ""){
+				classNameOld = "NOT_SET";
+			}
+			if(classNameNew === ""){
+				classNameNew = "NOT_SET";
+			}
+			jsoninput[jsoninput.length] = {"id":id, "action":selectedAction, "activeTab":activeTab, "ClassNameOld": classNameOld , "ClassNameNew":classNameNew}; 
+			message = 'Updating Class Name from ' + classNameOld + ' to ' + classNameNew;
 		}
 	} else if (selectedAction === 'Suite') {
 		if(activeTab === 'Add') {
@@ -256,6 +277,13 @@ function createUserInterpretableActionMessage(id, selectedAction, activeTab){
 				}		
 				message += ' invocationCount = '+invocationCount;
 			}		
+			if(name === ""){
+				name = "NOT_SET";
+			}
+			if(invocationCount === ""){
+				invocationCount = "NOT_SET";
+			}
+			jsoninput[jsoninput.length] = {"id":id, "action":selectedAction, "activeTab":activeTab, "NameAtSuite":name , "InvocationCountAtSuite":invocationCount};
 		} else if(activeTab === 'Update') {
 			message = 'Updating Suite Parameter ';
 			var nameOld = $('#updateNameAtSuiteOld').val();
@@ -272,7 +300,20 @@ function createUserInterpretableActionMessage(id, selectedAction, activeTab){
 				}		
 				message += ' invocationCount from '+invocationCountOld +' to '+invocationCountNew;
 			}		
-
+			if(nameOld === ""){
+				nameOld = "NOT_SET";
+			}
+			if(nameNew === ""){
+				nameNew = "NOT_SET";
+			}
+			if(invocationCountOld === ""){
+				invocationCountOld = "NOT_SET";
+			}
+			if(invocationCountNew === ""){
+				invocationCountNew = "NOT_SET";
+			}
+			jsoninput[jsoninput.length] = {"id":id, "action":selectedAction, "activeTab":activeTab, "NameAtSuiteOld":nameOld , "NameAtSuiteNew":nameNew , "invocationCountOld":invocationCountOld , "invocationCountNew":invocationCountNew};
+		
 		} else if(activeTab === 'Delete') {
 			var name = $('#deleteNameAtSuite').val();
 			var invocationCount = $('#deleteinvocationCountAtSuite').val();
@@ -285,9 +326,19 @@ function createUserInterpretableActionMessage(id, selectedAction, activeTab){
 					message += ' and';
 				}		
 				message += ' invocationCount = '+invocationCount;
-			}		
+			}	
+			if(name === ""){
+				name = "NOT_SET";
+			}
+			if(invocationCount === ""){
+				invocationCount = "NOT_SET";
+			}	
+			jsoninput[jsoninput.length] = {"id":id, "action":selectedAction, "activeTab":activeTab, "NameAtSuite":name , "InvocationCountAtSuite":invocationCount};
 		}
 	} 
+	jsonString = JSON.stringify(jsoninput);
+	$('#inputJson').val(jsonString);
+	console.log(jsonString);
 	var	actionListHtml = '<tr id="'+id+'"class="tdAdded"><td>'+ message +' <span class="float-right action-delete"><i class="far fa-trash-alt"></i></span></td></tr>';
 	return actionListHtml;
 }
@@ -337,3 +388,5 @@ $('#incorrectlyEdited').on('click', function(){
 	$('#noEditSuite').addClass('invisible');
 	$('#failSuite').removeClass('invisible');
 });
+
+

@@ -17,7 +17,7 @@
 			<div>
 				<nav class="navbar navbar-light navbar-custom justify-content-between">
 					<div class="navmargin">
-						<a href="se.jsp" class="navbar-brand" data-toggle="tooltip" data-placement="bottom" title="Unique code : ${uniqueId}" >
+						<a href="/" class="navbar-brand" data-toggle="tooltip" data-placement="bottom" title="Unique code : ${uniqueId}" >
 							<i class="far fa-edit mx-2"></i>Suite Editor
 						</a>
 					</div>
